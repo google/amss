@@ -1,0 +1,21 @@
+Package: amss
+Version: 1.0.0
+Date: 2017-04-20
+Title: Agreggate Marketing System Simulator
+Author: Google Inc. <amss-opensource@google.com>
+Maintainer: Google Inc. <amss-opensource@google.com>
+Depends:
+    R (>= 3.2.2)
+Imports:
+    assertthat (>= 0.1.0.99),
+    data.table (>= 1.9.6)
+Suggests:
+    knitr (>= 1.14),
+    testthat (>= 1.0.2)
+VignetteBuilder: knitr
+Description: Implementation of the Aggregate Marketing System Simulator.
+    Functions for simulating aggregate time series marketing data, and for
+    calculating associated ground truth for some relevant metrics.
+License: Apache License 2.0 | file LICENSE
+Copyright: Copyright (C) 2017 Google, Inc.
+RoxygenNote: 5.0.1

@@ -24,6 +24,9 @@ test_that("Binomial samples are generated for a large number of trials.", {
                       c(0.01, 0.99) - 1) < 0.01))
   expect_true(all(abs(RBinom(2, 1e5 * M, c(0.1, 0.9)) /
                       (1e5 * M) / c(0.1, 0.9) - 1) < 0.01))
+  # rbinom() only works on even values of size in this range.
+  # Check that the fix that forces size to be even works.
+  expect_true(!is.na(RBinom(1, 5151515151515151, 3e-8)))
 })
 
 context("RHyper")

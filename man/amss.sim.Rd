@@ -7,20 +7,27 @@
 amss.sim(data = NULL, data.full = NULL, params = NULL)
 }
 \arguments{
-\item{data}{observed data}
+\item{data}{a \code{data.table} containing the observed data.}
 
-\item{data.full}{full data, as list of data.tables with rows corresponding
-to each segment and columns corresponding to specific variables. each
-data.table corresponds to a single time point.}
+\item{data.full}{the full data, as list of \code{data.tables} with rows
+corresponding to each segment and columns corresponding to specific
+variables. Each \code{data.table} corresponds to a single time interval.}
 
-\item{params}{parameters used to generate the simulation}
+\item{params}{parameters used in specifying the simulation settings.}
 }
 \value{
-object of class \code{amss.sim}, containing the observed data, the
-  full dataset, and a prediction function.
+An object of class \code{amss.sim}, is a list with the following
+  elements:
+  \describe{
+    \item{data}{the observed data.}
+    \item{data.full}{the full dataset, as a list of data.tables. Each
+      \code{data.table} contains the data at the end of a time interval, by
+      by population segment (row) and variable (column).}
+    \item{params}{the parameters used to generate the data.}
+  }
 }
 \description{
-Creates objects of class \code{amss.sim}, containing full information
-about simulated data.
+Creates objects of class \code{amss.sim}.
 }
+\keyword{internal}
 

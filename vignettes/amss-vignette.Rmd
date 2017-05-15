@@ -260,7 +260,7 @@ cost per exposure, and the relationship between ad frequency and efficacy. See
 
 ``` {r params_tv, message = FALSE}
 params.tv <- list(
-    audience.membership = list(activity = rep(.4, 3)),
+    audience.membership = list(activity = rep(0.4, 3)),
     budget = rep(c(545e5, 475e5, 420e5, 455e5), length = n.years),
     budget.index = budget.index,
     flighting = tv.flighting,
@@ -447,7 +447,7 @@ sales.params <- list(
     competitor.demand.max = list(loyalty = c(0.8, 0, 0.8)),
     advertiser.demand.slope = list(favorability = rep(0, 5)),
     advertiser.demand.intercept = list(
-        favorability = c(.014, 0, 0.2, 0.3, 0.9)),
+        favorability = c(0.014, 0, 0.2, 0.3, 0.9)),
     price = 80)
 ```
 
@@ -648,7 +648,7 @@ from 1.
 # References
 
 [1] Zhang, S. and Vaver, J. (2017). The Aggregate Marketing System Simulator.
-*[research.google.com](https://research.google.com)*.
+*[research.google.com](https://research.google.com/pubs/pub45996.html)*.
 
 # Disclaimer
 This software is not an official Google product. For research purposes only. Copyright 2017 Google, Inc.

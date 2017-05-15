@@ -19,8 +19,18 @@ utils::globalVariables(c("pop", "total.spend"))
 #' Produces an \code{amss.sim} object that contains the simulated data and can
 #' be used to derive ground truth about the scenario.
 #'
+#' Objects of class \code{amss.sim} contain the full output from running a
+#' simulation scenario. This output includes the observed data, the complete
+#' dataset generated during the simulation process, and the parameters passed
+#' to the simulation function in order to generate the simulated data. The
+#' observed data is meant to be used by modelers. The complete dataset can be
+#' useful for users who want a more complete understanding of the forces
+#' operating in a simulation scenario. The parameter list is essential for
+#' generating future datasets based on the same, or slightly modified,
+#' simulation settings in order to obtain ground truth about the simulation
+#' scenario.
+#'
 #' @param time.n number of timepoints.
-#' @param geo.index single value, value of geo index for entire dataset.
 #' @param nat.mig.module specifications of class \code{seq.specs}, to be used
 #'   to create the non-actionable drivers module and then generate its
 #'   variables
@@ -43,17 +53,18 @@ utils::globalVariables(c("pop", "total.spend"))
 #'   the observed data, aggregated using the function \code{sum()}. By
 #'   default, \code{SurfaceData()} will pick up variables with names
 #'   matching "revenue", "profit", "sales", "volume", and/or "spend".
-#' @return an object of class \code{amss}, containing
+#' @return an object of class \code{amss.sim}, containing
 #'   \describe{
-#'     \item{data:}{observed data.}
-#'     \item{data.full:}{the full data, as a list of data.tables.}
-#'     \item{params:}{the simulation settings used to generate the data.}
-#'     }
+#'     \item{data}{the observed data.}
+#'     \item{data.full}{the full dataset, as a list of data.tables. Each
+#'       \code{data.table} contains the data at the end of a time interval, by
+#'       by population segment (row) and variable (column).}
+#'     \item{params}{the parameters used to generate the data.}
+#'   }
 #' @export
 
 SimulateAMSS <- function(
     time.n,
-    geo.index = 0,
     nat.mig.module = `DefaultNatMigModule`,
     nat.mig.params = list(),
     media.names = character(),
@@ -68,7 +79,6 @@ SimulateAMSS <- function(
 
   # Check inputs.
   assertthat::assert_that(time.n >= 1)
-  assertthat::assert_that(length(geo.index) == 1)
   # Different media channels must have different names.
   assertthat::assert_that(!anyDuplicated(media.names))
 
@@ -82,12 +92,12 @@ SimulateAMSS <- function(
 
   # Simulate data.
   data.full <- do.call(
-      .SimulateData,
-      c(list(starting.dts = list()), params)[formalArgs(`.SimulateData`)])
+      SimulateData,
+      c(list(starting.dts = list()), params)[formalArgs(`SimulateData`)])
 
   # Return an object of class amss.sim.
   return(amss.sim(
-      data = .SurfaceData(data.full, names.agg.const, names.agg.sum),
+      data = SurfaceData(data.full, names.agg.const, names.agg.sum),
       data.full = data.full,
       params = params))
 }
@@ -102,7 +112,6 @@ SimulateAMSS <- function(
 #'   will only be generated for later timepoints
 #' @param time.n total number of timepoints, including the timepoints already
 #'   existing in starting.dts.
-#' @param geo.index single value, geo index assigned to this simulation
 #' @param nat.mig.module function used to simulate effects of natural migration
 #'   on population segmentation.
 #' @param nat.mig.params list of any parameter values to pass to
@@ -119,10 +128,11 @@ SimulateAMSS <- function(
 #' @return a list of data sets, one per timepoint. Each is a data.table with
 #'   rows corresponding to population segments and columns corresponding
 #'   to specific variables.
+#' @keywords internal
 
-.SimulateData <- function(
+SimulateData <- function(
     starting.dts = list(),
-    time.n, geo.index,
+    time.n,
     nat.mig.module, nat.mig.params,
     media.names, media.modules, media.params,
     sales.module, sales.params,
@@ -141,7 +151,7 @@ SimulateAMSS <- function(
   # variable.
   t.start <- length(all.dt) + 1L
   if (t.start == 1) {
-    curr.dt <- .InitStateData(time.index = 0, geo.index = geo.index)
+    curr.dt <- InitStateData(time.index = 0)
   } else {
     curr.dt <- data.table::copy(all.dt[[t.start - 1]])
   }
@@ -161,7 +171,7 @@ SimulateAMSS <- function(
       # Since the module updated the data.table without specifying the media
       # name, variables such as "volume" must be updated to "tv.volume".
       var.names <- setdiff(names(curr.dt), existing.var.names)
-      new.var.names <- .PasteD(media.names[iter.media], var.names)
+      new.var.names <- PasteD(media.names[iter.media], var.names)
       # Delete data from the previous time interval to avoid duplicate columns.
       if (iter.t > 1) {
         curr.dt[, (new.var.names) := NULL]
@@ -170,9 +180,9 @@ SimulateAMSS <- function(
     }
     curr.dt[,
             total.spend :=
-                .EvalText(paste(.PasteD(media.names, "spend"),
-                                collapse = " + "),
-                          curr.dt)]
+                EvalText(paste(PasteD(media.names, "spend"),
+                               collapse = " + "),
+                         curr.dt)]
     # Run the sales module.
     do.call(sales.module, c(list(curr.dt), sales.params))
 
@@ -188,20 +198,19 @@ SimulateAMSS <- function(
 #' population segment.
 #'
 #' @param time.index time index to intialize the data table to
-#' @param geo.index geo index to initialize the data table to
 #' @return data.table with one column for each state variable (market,
 #'   satiation, activity, brand) and one row per each valid combination of
 #'   states for the above state variables. Also initializes the population
 #'   count at timepoint 1 as 0.
+#' @keywords internal
 
-.InitStateData <- function(
-    time.index = 0, geo.index = 0) {
+InitStateData <- function(time.index = 0) {
 
   # Create a copy of the data.table listing all population segments.
   data.dt <- data.table::copy(kAllStates)
 
   # Set the time index, geo index, and population size
-  data.dt[, time.index := time.index][, geo.index := geo.index][, pop := 0L]
+  data.dt[, time.index := time.index][, pop := 0]
   return(data.dt)
 }
 
@@ -218,13 +227,14 @@ SimulateAMSS <- function(
 #' @return observable data, aggregated over the hidden states as specified.
 #'   Variables not included in names.const or names.sum are assumed to be
 #'   hidden variables and not surfaced.
+#' @keywords internal
 
-.SurfaceData <- function(full.data, names.const, names.sum) {
+SurfaceData <- function(full.data, names.const, names.sum) {
 
   # Check the full.data argument.
   full.data <- rbindlist(full.data, use.names = TRUE)
   data.table::setkeyv(full.data,
-                      c("time.index", "geo.index", colnames(kAllStates)))
+                      c("time.index", colnames(kAllStates)))
   # The data.table keys should be unique
   assertthat::assert_that(identical(full.data, unique(full.data)))
 
@@ -260,18 +270,18 @@ SimulateAMSS <- function(
   # Perform the data aggregation.
   if (identical(character(), names.sum)) {
     vals.sum <-
-        unique(full.data[, c("time.index", "geo.index"), with = FALSE])
+        unique(full.data[, "time.index", with = FALSE])
   } else {
     vals.sum <- full.data[, lapply(.SD, sum),
-                          by = c("time.index", "geo.index"),
+                          by = "time.index",
                           .SDcols = names.sum]
   }
   if (identical(character(), names.const)) {
     vals.const <-
-        unique(full.data[, c("time.index", "geo.index"), with = FALSE])
+        unique(full.data[, "time.index", with = FALSE])
   } else {
     vals.const <- full.data[, lapply(.SD, function(x) x[1]),
-                            by = c("time.index", "geo.index"),
+                            by = "time.index",
                             .SDcols = names.const]
   }
   surfaced.data <- vals.sum[vals.const]

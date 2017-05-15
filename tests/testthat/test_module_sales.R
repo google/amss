@@ -15,8 +15,8 @@
 context("DefaultSalesModule")
 
 test_that("advertiser and competitor sales are calculated correctly", {
-  dt <- .InitStateData(time.index = 13, geo.index = 1)
-  dt[, pop := rbinom(nrow(kAllStates), 2000, 0.5)]
+  dt <- InitStateData(time.index = 13)
+  dt[, pop := RBinom(nrow(kAllStates), 2000, 0.5)]
   init.pop <- dt[, pop]
   dt[, total.spend := pop * 0.5]
   DefaultSalesModule(

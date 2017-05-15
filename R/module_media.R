@@ -62,7 +62,7 @@ utils::globalVariables(c(
 #'   interventions. A named list with members 'activity', 'favorability',
 #'   'loyalty', and 'availability' is expected. By default, any missing
 #'   members will have no effect.
-#' @return invisible(NULL). \code{data.dt} updated by reference.
+#' @return \code{invisible(NULL)}. \code{data.dt} updated by reference.
 #' @export
 
 DefaultTraditionalMediaModule <- function(
@@ -85,8 +85,8 @@ DefaultTraditionalMediaModule <- function(
                             all(budget < Inf))
     assertthat::assert_that(is.numeric(flighting), all(flighting >= 0))
     assertthat::assert_that(is.numeric(unit.cost), all(unit.cost > 0))
-    .CheckListNames(transition.matrices,
-                    setdiff(colnames(kAllStates), c("market", "satiation")))
+    CheckListNames(transition.matrices,
+                   setdiff(colnames(kAllStates), c("market", "satiation")))
   }
 
   # Calculate the budget.
@@ -99,8 +99,8 @@ DefaultTraditionalMediaModule <- function(
 
   # Simulate the audience size.
   data.dt[,
-          audience := rbinom(length(pop), pop,
-                             .MultiplyBySegment(audience.membership))]
+          audience := RBinom(length(pop), pop,
+                             MultiplyBySegment(audience.membership))]
 
   # Simulate the amount of spend and the volume of exposures.
   assertthat::assert_that(length(flighting) == length(budget.index))
@@ -125,9 +125,9 @@ DefaultTraditionalMediaModule <- function(
   }
   # Generate the number of exposures
   data.dt[,
-          volume := rpois(length(audience),
+          volume := RPois(length(audience),
                           fn.env$expected.percapita.volume * audience)]
-  total.volume <- data.dt[, sum(as.numeric(volume))]
+  total.volume <- data.dt[, sum(volume)]
   if (total.volume > 0) {
     data.dt[, spend := fn.env$total.spend * volume / total.volume]
   } else {
@@ -136,7 +136,7 @@ DefaultTraditionalMediaModule <- function(
 
   # Calculate the absolute reach (number of individuals reached) and the
   # average frequency of exposure for each segment.
-  data.dt[, absolute.reach := .SimulateNotEmptyUrns(volume, audience)]
+  data.dt[, absolute.reach := SimulateNotEmptyUrns(volume, audience)]
   data.dt[, frequency := ifelse(absolute.reach == 0,
                                 0, volume / absolute.reach)]
 
@@ -149,9 +149,9 @@ DefaultTraditionalMediaModule <- function(
   effect.size <- data.dt[, effectiveness.function(frequency)]
   assertthat::assert_that(all(effect.size >= 0 & effect.size <= 1))
   migrating.pop <-
-      rbinom(nrow(data.dt), data.dt[, absolute.reach], effect.size)
-  .MigrateMultiple(data.dt, migrating.pop,
-                   names(transition.matrices), transition.matrices)
+      RBinom(nrow(data.dt), data.dt[, absolute.reach], effect.size)
+  MigrateMultiple(data.dt, migrating.pop,
+                  names(transition.matrices), transition.matrices)
   return(invisible(NULL))
 }
 
@@ -220,7 +220,7 @@ DefaultTraditionalMediaModule <- function(
 #'   interventions. A named list with members 'activity', 'favorability',
 #'   'loyalty', and 'availability' is expected. By default, any missing
 #'   members will have no effect.
-#' @return invisible(NULL). \code{data.dt} updated by reference.
+#' @return \code{invisible(NULL)}. \code{data.dt} updated by reference.
 #' @export
 
 DefaultSearchMediaModule <- function(
@@ -251,8 +251,8 @@ DefaultSearchMediaModule <- function(
         length(relative.effectiveness) == 3,
         all(relative.effectiveness >= 0),
         all(relative.effectiveness <= 1))
-    .CheckListNames(transition.matrices,
-                    setdiff(colnames(kAllStates), c("market", "satiation")))
+    CheckListNames(transition.matrices,
+                   setdiff(colnames(kAllStates), c("market", "satiation")))
   }
 
   # Calculate budget variables.
@@ -275,29 +275,29 @@ DefaultSearchMediaModule <- function(
   assertthat::assert_that(kwl >= 0, kwl <=1)
   # Check that matching probability is either single numeric or vector with
   # an entry for each population segment.
-  .CheckLength(kwl, data.dt[, .N])
+  CheckLength(kwl, data.dt[, .N])
 
   # Simulate the audience size, i.e., the population making queries.
   data.dt[,
-          audience := rbinom(length(pop), pop,
-                             .MultiplyBySegment(audience.membership))]
+          audience := RBinom(length(pop), pop,
+                             MultiplyBySegment(audience.membership))]
 
   # Simulate the volume of search and the amount of spend.
   # Simulate the total number of queries.
-  query.rate <- .ReadRepeatingVector(query.rate, current.time)
-  qv.total <- rpois(1, query.rate * data.dt[, sum(audience)])
+  query.rate <- ReadRepeatingVector(query.rate, current.time)
+  qv.total <- RPois(1, query.rate * data.dt[, sum(audience)])
   # Simulate the number of matching queries.
-  matching.qv.total <- rbinom(
+  matching.qv.total <- RBinom(
       1, qv.total,  sum(data.dt[, audience / sum(audience)] * kwl))
   # Calculate the maximum number of clicks, based on spend cap.
-  cpc.min <- .ReadRepeatingVector(cpc.min, current.time)
-  cpc.max <- .ReadRepeatingVector(cpc.max, current.time)
+  cpc.min <- ReadRepeatingVector(cpc.min, current.time)
+  cpc.max <- ReadRepeatingVector(cpc.max, current.time)
   cpc <- min(max(cpc.min, bid), cpc.max)  # cost per click
   click.cap <- ifelse(is.infinite(spend.cap),
                       Inf,
-                      as.integer(spend.cap / cpc))  # remove the fractional part
+                      floor(spend.cap / cpc))  # remove the fractional part
   # Calculate the average clickthrough rate over all segments.
-  data.dt[, ctr := .MultiplyBySegment(ctr)]
+  data.dt[, ctr := MultiplyBySegment(ctr)]
   average.ctr <- data.dt[, sum(audience * ctr) / sum(audience)]
   # Calculate the number of impressions needed to reach the click.cap.
   if (is.infinite(click.cap)) {
@@ -306,13 +306,7 @@ DefaultSearchMediaModule <- function(
     imp.cap <- 0L
   } else {
     # The number of failures before the final click is negative binomial.
-    # Suppress warnings generated by integer overflow.
-    imp.cap <- click.cap +
-        suppressWarnings(rnbinom(1, click.cap, average.ctr))
-    # Set imp.cap to Inf when integer overflow
-    if (is.na(imp.cap)) {
-      imp.cap <- Inf
-    }
+    imp.cap <- click.cap + RNBinom(1, click.cap, average.ctr)
   }
   # Calculate the available number of paid impressions, based on bid's effect on
   # share of voice.
@@ -321,14 +315,14 @@ DefaultSearchMediaModule <- function(
   } else {
     sov <- min(max((bid - cpc.min) / (cpc.max - cpc.min), 0), 1)
   }
-  imp.avail <- rbinom(1, matching.qv.total, sov)
+  imp.avail <- RBinom(1, matching.qv.total, sov)
   # Calculate the total number of paid impressions.
   imp.total <- min(imp.avail, imp.cap)
   # Calculate the total number of paid clicks.
-  if (is.infinite(click.cap) || is.infinite(imp.cap)) {  # uncapped.
-    click.total <- rbinom(1, imp.avail, average.ctr)
+  if (is.infinite(click.cap)) {  # uncapped.
+    click.total <- RBinom(1, imp.avail, average.ctr)
   } else if (imp.avail < imp.cap) {  # capped, limited by inventory.
-    click.total <- rhyper(1, click.cap, imp.cap - click.cap, imp.avail)
+    click.total <- RHyper(1, click.cap, imp.cap - click.cap, imp.avail)
   } else {  # capped, limited by cap.
     click.total <- click.cap
   }
@@ -339,14 +333,14 @@ DefaultSearchMediaModule <- function(
     data.dt[, clicks := 0]
   } else {
     data.dt[,
-            clicks := rmultinom( 1, click.total, audience * ctr)]
+            clicks := RMultinom(1 , click.total, audience * ctr)]
   }
   # Impressions.
   if (data.dt[, sum(audience * (1 - ctr))] == 0) {
     data.dt[, imps := clicks]
   } else {
     data.dt[,
-            imps := clicks + rmultinom(
+            imps := clicks + RMultinom(
                 1, imp.total - click.total, audience * (1 - ctr))]
   }
   # Matching queries.
@@ -355,7 +349,7 @@ DefaultSearchMediaModule <- function(
   } else {
     data.dt[,
             matching.query.volume := imps +
-                rmultinom(1, matching.qv.total - imp.total,
+                RMultinom(1, matching.qv.total - imp.total,
                           audience * kwl)]
   }
   # Queries.
@@ -364,7 +358,7 @@ DefaultSearchMediaModule <- function(
   } else {
     data.dt[,
             query.volume := matching.query.volume +
-                rmultinom(1, qv.total - matching.qv.total,
+                RMultinom(1, qv.total - matching.qv.total,
                           audience * (1 - kwl))]
   }
   # Calculate the spend from the paid clicks.
@@ -373,21 +367,21 @@ DefaultSearchMediaModule <- function(
   # Calculate the absolute reach (# of unique individuals) for each
   # volume type:
   # Organic queries.
-  n.qv <- .SimulateNotEmptyUrns(data.dt[, query.volume], data.dt[, audience])
+  n.qv <- SimulateNotEmptyUrns(data.dt[, query.volume], data.dt[, audience])
   # Paid impressions.
-  n.imp <- .SimulateNotEmptyUrns(data.dt[, imps], n.qv)
+  n.imp <- SimulateNotEmptyUrns(data.dt[, imps], n.qv)
   # Paid clicks.
-  n.click <- .SimulateNotEmptyUrns(data.dt[, clicks], n.imp)
+  n.click <- SimulateNotEmptyUrns(data.dt[, clicks], n.imp)
 
   # The proportion of people migrating depends on the relative effectiveness
   # of organic only seach, paid impressions with no paid click, and paid clicks
   # at moving consumers.
   migrating.pop <-
-      rbinom(length(n.qv), n.qv - n.imp, relative.effectiveness[1]) +
-      rbinom(length(n.imp), n.imp - n.click, relative.effectiveness[2]) +
-      rbinom(length(n.click), n.click, relative.effectiveness[3])
+      RBinom(length(n.qv), n.qv - n.imp, relative.effectiveness[1]) +
+      RBinom(length(n.imp), n.imp - n.click, relative.effectiveness[2]) +
+      RBinom(length(n.click), n.click, relative.effectiveness[3])
   # Simulate population migration.
-  .MigrateMultiple(
+  MigrateMultiple(
       data.dt, migrating.pop,
       names(transition.matrices),
       transition.matrices)

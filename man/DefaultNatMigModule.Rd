@@ -65,7 +65,7 @@ its equilibrium allocation across segments after marketing
 interventions.}
 }
 \value{
-invisible(NULL). data.dt is updated by reference.
+\code{invisible(NULL)}. \code{data.dt} is updated by reference.
 }
 \description{
 This function models natural consumer behavior in the absence of marketing

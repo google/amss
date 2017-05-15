@@ -53,22 +53,30 @@ RBinom <- function(n, size, prob) {
 
   # Generate either x or size - x, whichever is smaller.
   prob.min <- pmin(prob, 1 - prob)
-  # Calculate probability of integer overflow.
-  p.overflow <- pbinom(.Machine$integer.max, size, prob.min, lower.tail = FALSE)
-  x <- suppressWarnings(as.numeric(rbinom(n, size, prob.min)))
 
-  # Approximate with the normal distrbution if probability of overflow > 0.
-  # Do this even if x is not NA, to avoid double-dipping.
-  # Checking probability of integer overflow rather than size covers the edge
-  # case where prob is very small and size is very large.
-  p.overflow.idx <- p.overflow > 0
-  if (any(p.overflow.idx)) {
-    approx.x <- rnorm(sum(p.overflow.idx),
-                      size[p.overflow.idx] * prob.min[p.overflow.idx],
-                      sqrt(size[p.overflow.idx] * prob.min[p.overflow.idx] *
-                           (1 - prob.min[p.overflow.idx])))
-    approx.x <- round(pmax(0, pmin(size[p.overflow.idx], approx.x)))
-    x[p.overflow.idx] <- approx.x
+  # When size is large, and prob.min is not too small, use the normal
+  # approximation.
+  approx.idx <- size > .Machine$integer.max
+  normal.idx <- approx.idx & (size * prob.min > 1000)
+  # Else, use the Poisson distribution for prob.min small.
+  poisson.idx <- approx.idx & (!normal.idx)
+
+  # Try to use the rbinom() function to pull from the exact binomial
+  # distribution.
+  x <- suppressWarnings(as.numeric(rbinom(n, size, prob.min)))
+  # Approximate with the normal distribution.
+  if (any(normal.idx)) {
+    approx.x <- rnorm(sum(normal.idx),
+                      size[normal.idx] * prob.min[normal.idx],
+                      sqrt(size[normal.idx] * prob.min[normal.idx] *
+                           (1 - prob.min[normal.idx])))
+    approx.x <- round(pmax(0, pmin(size[normal.idx], approx.x)))
+    x[normal.idx] <- approx.x
+  }
+  # Approximate with the Poisson distribution.
+  if (any(poisson.idx)) {
+    x[poisson.idx] <- rpois(sum(poisson.idx),
+                            size[poisson.idx] * prob.min[poisson.idx])
   }
 
   # Convert size - x to x where necessary.
@@ -152,7 +160,6 @@ RHyper <- function(nn, m, n, k) {
   lower.bound <- pmax(0, k - n)
   upper.bound <- pmin(k, m)
   x <- pmin(upper.bound, pmax(lower.bound, x))
-
   return(x)
 }
 

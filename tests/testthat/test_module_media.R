@@ -35,15 +35,15 @@ test_that("the specified amount of spend is generated", {
 context("DefaultSearchMediaModule")
 
 test_that("the function completes successfully", {
-  dt <- .InitStateData(time.index = 13, geo.index = 1)
-  .InitPop(data.dt = dt, pop.total = 1e5, market.rate = 0.7,
-           prop.activity = c(.5, .3, .2),
-           prop.favorability = c(0.15, 0.1, 0.2, 0.35, 0.2))
+  dt <- InitStateData(time.index = 13)
+  InitPop(data.dt = dt, pop.total = 1e5, market.rate = 0.7,
+          prop.activity = c(0.5, 0.3, 0.2),
+          prop.favorability = c(0.15, 0.1, 0.2, 0.35, 0.2))
   do.call(DefaultSearchMediaModule,
           c(list(dt), test.args$media.params[[2]]))
   expect_true(setequal(names(dt),
               c(names(kAllStates),
-                "time.index", "geo.index",
+                "time.index",
                 "pop", "pop.out", "pop.in",
                 "budget.index", "budget",
                 "audience", "ctr",

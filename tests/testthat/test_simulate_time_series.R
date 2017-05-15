@@ -23,7 +23,7 @@ test_that("constant v results in pure noise", {
   # correlate with constant should be a regular normal distribution
   # with the specified mean and variance
   expect_true(ks.test(
-      SimulateCorrelated(v = rep(0, n), cor.vx= .2,
+      SimulateCorrelated(v = rep(0, n), cor.vx= 0.2,
                          mu.x = 77, sigma.x = 2.3),
       function(q) pnorm(q, 77, 2.3))$p.value >= alpha)
 })
@@ -67,7 +67,8 @@ test_that("errors are signalled as appropriate", {
 })
 
 test_that("output vectors follow the specified distribution", {
-  expect_equal(SimulateAR1(n = 100, stable.mu = 0, stable.sd = 0, autocor = .2),
+  expect_equal(SimulateAR1(n = 100, stable.mu = 0,
+                           stable.sd = 0, autocor = 0.2),
                rep(0, 100))
   NearEnoughAR1 <- function(ts, mu, sd, ac, c.level = 0.9999) {
     y <- ts[2:length(ts)]
@@ -84,6 +85,6 @@ test_that("output vectors follow the specified distribution", {
     theta <- c((1 - ac) * mu, ac, (1 - ac^2) * sd^2)
     return(theta >= est.bds[, 1] & theta <= est.bds[, 2])
   }
-  expect_true(all(NearEnoughAR1(SimulateAR1(5000, 8, 8, .8),
-                                8, 8, .8)))
+  expect_true(all(NearEnoughAR1(SimulateAR1(5000, 8, 8, 0.8),
+                                8, 8, 0.8)))
 })

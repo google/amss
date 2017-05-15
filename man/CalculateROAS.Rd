@@ -7,9 +7,9 @@
 CalculateROAS(object, new.budget = NULL,
   media.names = object$params$media.names, budget.periods = NULL,
   budget.proportion = rep(0, length(media.names)), t.start = 1,
-  t.end = object$params$time.n, scaled.pop.size = .Machine$integer.max/100,
-  min.reps = 10, max.coef.var = 0.01, max.margin.error = 0.01,
-  max.time = 30, verbose = FALSE)
+  t.end = object$params$time.n, scaled.pop.size = 1e+18, min.reps = 2,
+  max.coef.var = 0.01, max.margin.error = 0.01, max.time = 0,
+  verbose = FALSE)
 }
 \arguments{
 \item{object}{amss.sim object containing simulated data}
@@ -40,13 +40,19 @@ the modified budget periods in order to include lagged effects in the
 calculation.}
 
 \item{scaled.pop.size}{\code{CalculateROAS} scales up the population size to
-reduce the variability of its estimates. This number should be chosen
-to be as large as possible while avoiding integer overflow during
-data simulation.}
+reduce the variability of its estimates. This is equivalent to running
+the simulation for multiple repetitions to reduce variability. The
+default value should provide sufficient accuracy in most use cases.
+Extremely large values may result in numerical issues.}
 
 \item{min.reps}{integer representing the initial number of datasets to
-generate from each budget setting. A reasonable number of initial
-datasets is needed to estimate the amount of variability accurately}
+generate from each budget setting. The default value of 2 allows the user
+to make a rough check that the accuracy is indeed good under the chosen
+settings. This default was chosen under the assumption that the default
+\code{scaled.pop.size} is large enough to accurately measure ROAS using 1
+repetition, with the 2nd being used as confirmation of the accuracy. Higher
+precision and more accurate measurement of the precision can be achieved
+with more repetitions.}
 
 \item{max.coef.var}{numeric, the target coefficient of variation. The
 function takes additional samples of the ROAS until it runs out of
@@ -62,7 +68,9 @@ margin of error.}
 function from taking additional samples beyond the initial sample
 generated according to \code{min.reps}. The function takes additional
 samples of the ROAS until it runs out of time, attains the target
-coefficient of variation, or attains the target margin of error.}
+coefficient of variation, or attains the target margin of error. The
+default value of 0 forces the function to use precisely \code{min.reps}
+repetitions.}
 
 \item{verbose}{boolean. If TRUE, output measures of the accuracy of the
 reported ROAS, including the full sample of ROAS values.}

@@ -30,13 +30,13 @@ GetArgs <- function(period.length = 10) {
   market.rate.trend <-
       pmin(1,
            pmax(0,
-                SimulateAR1(time.n, .75, .05, .3)))
+                SimulateAR1(time.n, 0.75, 0.05, 0.3)))
   market.rate.seas <-
       pmin(1,
            pmax(0,
                 SimulateSinusoidal(
                     n = time.n, period = period.length / 2, max.loc = 1,
-                    vert.translation = .5, amplitude = .4)))
+                    vert.translation = 0.5, amplitude = 0.4)))
   favorability.transition <-
       matrix(c(0.90, 0.02, 0.05, 0.03, 0.00,  # unaware
                0.00, 0.90, 0.10, 0.00, 0.00,  # negative
@@ -48,22 +48,22 @@ GetArgs <- function(period.length = 10) {
       population = 1000,
       market.rate.seas = market.rate.seas,
       market.rate.trend = market.rate.trend,
-      sat.decay = .4,
+      sat.decay = 0.4,
       prop.activity = c(0.5, 0.3, 0.2),
-      prop.favorability = c(.15, .1, .2, .35, .2),
+      prop.favorability = c(0.15, 0.1, 0.2, 0.35, 0.2),
       transition.matrices = list(
-          activity = matrix(.1, 3, 3) + .7 * diag(3),
+          activity = matrix(0.1, 3, 3) + 0.7 * diag(3),
           favorability = favorability.transition))
 
   # Parameters controlling sales module
   sales.params <- list(
       competitor.demand.max = list(
-          favorability = rep(.8, 5),
+          favorability = rep(0.8, 5),
           loyalty = c(1, 0, 1)),
       advertiser.demand.slope = list(
-          favorability = c(.04, .05, .03, .02, .01)),
+          favorability = c(0.04, 0.05, 0.03, 0.02, 0.01)),
       advertiser.demand.intercept = list(
-          favorability = c(.4, .2, .6, .8, 1)),
+          favorability = c(0.4, 0.2, 0.6, 0.8, 1)),
       price = 15)
 
   # media parameters
@@ -71,7 +71,7 @@ GetArgs <- function(period.length = 10) {
   budget.index <- rep(1:4, each = period.length)
   flighting <- pmax(
       SimulateCorrelated(
-          v = market.rate.seas, cor.vx = .8,
+          v = market.rate.seas, cor.vx = 0.8,
           mu.x = mean(market.rate.seas), sigma.x = sd(market.rate.seas)),
       0)
   activity.trans.mat <- matrix(
@@ -87,12 +87,12 @@ GetArgs <- function(period.length = 10) {
         0.0, 0.0, 0.00, 0.00, 1.0),  # favorable
       length(kFavorabilityStates), length(kFavorabilityStates), TRUE)
   params.m1 <- list(
-      audience.membership = list(activity = rep(.4, 3)),
+      audience.membership = list(activity = rep(0.4, 3)),
       budget = budget,
       budget.index = budget.index,
       flighting = flighting,
       unit.cost = 0.1,
-      hill.ec = .3,
+      hill.ec = 0.3,
       hill.slope = 4,
       transition.matrices = list(
           activity = activity.trans.mat,
@@ -113,17 +113,17 @@ GetArgs <- function(period.length = 10) {
        length(kFavorabilityStates), length(kFavorabilityStates), TRUE)
   params.m2 <- list(
       audience.membership = list(
-          activity = rep(.4, 3),
+          activity = rep(0.4, 3),
           favorability = rep(1, 5)),
       budget = c(0, 250 * period.length, 500 * period.length, 0),
       budget.index = rep(1:4, each = period.length),
       spend.cap.fn = function(time.index, budget, budget.index) {
         return(budget / period.length * 1.4)},
       bid.fn = function(time.index, per.capita.budget, budget.index)
-          return(1.2 * HillTrans(per.capita.budget, .01, 4)),
+          return(1.2 * HillTrans(per.capita.budget, 0.01, 4)),
       kwl.fn = function(time.index, per.capita.budget, budget.index) {
         kwll <- sum(per.capita.budget >=
-                    c(0, .021, .061, .081, .121, .161, .221))
+                    c(0, 0.021, 0.061, 0.081, 0.121, 0.161, 0.221))
         return(c(0, 2000, 6000, 8000, 12000, 16000, 22000)[kwll] / 22000)
       },
       query.rate = 1,
@@ -132,14 +132,13 @@ GetArgs <- function(period.length = 10) {
       ctr = list(
           activity = c(0.02, 0.6, 0.8),
           favorability = c(0.15, 0, 0.3, 0.6, 1)),
-      relative.effectiveness = c(.1, .2, 1),
+      relative.effectiveness = c(0.1, 0.2, 1),
       transition.matrices = list(
           activity = search.activity.trans.mat,
           favorability = search.favorability.trans.mat))
 
   return(list(
       time.n = time.n,
-      geo.index = 3,
       nat.mig.params = nat.mig.params,
       media.names = c("traditional", "search"),
       media.modules = c(`DefaultTraditionalMediaModule`,

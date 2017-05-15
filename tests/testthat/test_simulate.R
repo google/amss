@@ -27,14 +27,14 @@ context("SimulateData")
 test_that("data generates correctly, starting from an arbitrary time", {
   # Parameter values.
   for (iter.arg in names(test.args)) {
-    .EvalText(paste0(iter.arg, " <- test.args$", iter.arg))
+    EvalText(paste0(iter.arg, " <- test.args$", iter.arg))
   }
 
   # Data generation: Complete data generated for TestSimulateAMSS().
   # Here, first try simulating less data than the original time.n
-  data.first10 <- .SimulateData(
+  data.first10 <- SimulateData(
       starting.dts = list(),
-      time.n = 10, geo.index = geo.index,
+      time.n = 10,
       nat.mig.module = DefaultNatMigModule,
       nat.mig.params = nat.mig.params,
       media.names = media.names[1],
@@ -44,9 +44,9 @@ test_that("data generates correctly, starting from an arbitrary time", {
       sales.params = sales.params,
       ping = 10)
   # Then, try simulating additional data following up.
-  data.next10 <- .SimulateData(
+  data.next10 <- SimulateData(
       starting.dts = data.first10,
-      time.n = 20, geo.index = geo.index,
+      time.n = 20,
       nat.mig.module = DefaultNatMigModule,
       nat.mig.params = nat.mig.params,
       media.names = media.names[1],
@@ -68,19 +68,19 @@ test_that("data generates correctly, starting from an arbitrary time", {
   # Check that the latter data set generated numbers appropriately.
   expect_equal(media.params[[1]]$flighting[1:10] *
                media.params[[1]]$budget[1],
-               .SurfaceData(data.first10)[, traditional.spend])
+               SurfaceData(data.first10)[, traditional.spend])
   expect_equal(media.params[[1]]$flighting[1:20] *
                rep(media.params[[1]]$budget[1:2], each = 10) /
                rep(c(sum(media.params[[1]]$flighting[1:10]),
                      sum(media.params[[1]]$flighting[11:20])),
                    each = 10),
-               .SurfaceData(data.next10)[, traditional.spend])
+               SurfaceData(data.next10)[, traditional.spend])
 })
 
-context(".SurfaceData")
+context("SurfaceData")
 
 test_that("observed data is aggregated correctly", {
-  obs.data <- .SurfaceData(full.data = test.data$data.full)
+  obs.data <- SurfaceData(full.data = test.data$data.full)
 
   # Check values in some 'sum' rows.
   # Profit = revenue - spend.
@@ -94,19 +94,51 @@ test_that("observed data is aggregated correctly", {
 
   # Exceptions for bad arguments:
   # Aggregate one column both ways.
-  expect_error(.SurfaceData(test.data$data.full,
-                                   "total.spend", "total.spend"),
+  expect_error(SurfaceData(test.data$data.full,
+                           "total.spend", "total.spend"),
                "The same variable cannot be aggregated in multiple ways.")
 
   # Having 0 columns aggregated one or both ways is fine.
   expect_equal(
-      as.matrix(obs.data[, .(time.index, geo.index)]),
-      as.matrix(.SurfaceData(test.data$data.full,
-                                    character(), character())))
-  dt1 <- .SurfaceData(full.data = test.data$data.full,
-                             names.const = character())
-  dt2 <- .SurfaceData(full.data = test.data$data.full,
-                             names.sum = character())
+      as.matrix(obs.data[, .(time.index)]),
+      as.matrix(SurfaceData(test.data$data.full,
+                            character(), character())))
+  dt1 <- SurfaceData(full.data = test.data$data.full,
+                     names.const = character())
+  dt2 <- SurfaceData(full.data = test.data$data.full,
+                     names.sum = character())
   expect_equal(as.matrix(obs.data),
                as.matrix(dt1[dt2]))
+})
+
+context("InitStateData")
+
+test_that("the population segmentation states are generated correctly", {
+  # Test package constants have correct value along the way.
+  init.data <- InitStateData()
+  expect_identical(nrow(init.data), nrow(kAllStates))
+  expect_identical(nrow(kAllStates), nrow(kBrandStates) * nrow(kCategoryStates))
+  expect_identical(nrow(kCategoryStates), 6L)
+  expect_identical(nrow(kBrandStates), 33L)
+  expect_identical(names(init.data),
+              c("market", "satiation", "activity",
+                "favorability", "loyalty", "availability",
+                "time.index", "pop"))
+  expect_identical(key(init.data),
+              c("market", "satiation", "activity",
+                "favorability", "loyalty", "availability"))
+  expect_identical(levels(init.data[, market]),
+              c("out.market", "in.market"))
+  expect_identical(levels(init.data[, satiation]),
+              c("satiated", "unsatiated"))
+  expect_identical(levels(init.data[, activity]),
+              c("inactive", "exploration", "purchase"))
+  expect_identical(levels(init.data[, favorability]),
+              c("unaware", "negative", "neutral",
+                "somewhat favorable", "favorable"))
+  expect_identical(levels(init.data[, loyalty]),
+              c("switcher", "loyal", "competitor-loyal"))
+  expect_identical(levels(init.data[, availability]),
+              c("low", "average", "high"))
+  expect_identical(init.data[, pop], rep(0, nrow(init.data)))
 })

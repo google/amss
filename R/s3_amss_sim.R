@@ -14,17 +14,23 @@
 
 #' Create AMSS simulation objects.
 #'
-#' Creates objects of class \code{amss.sim}, containing full information
-#' about simulated data.
+#' Creates objects of class \code{amss.sim}.
 #'
-#' @param data observed data
-#' @param data.full full data, as list of data.tables with rows corresponding
-#'   to each segment and columns corresponding to specific variables. each
-#'   data.table corresponds to a single time point.
-#' @param params parameters used to generate the simulation
-#' @return object of class \code{amss.sim}, containing the observed data, the
-#'   full dataset, and a prediction function.
-#' @export
+#' @param data a \code{data.table} containing the observed data.
+#' @param data.full the full data, as list of \code{data.tables} with rows
+#'   corresponding to each segment and columns corresponding to specific
+#'   variables. Each \code{data.table} corresponds to a single time interval.
+#' @param params parameters used in specifying the simulation settings.
+#' @return An object of class \code{amss.sim}, is a list with the following
+#'   elements:
+#'   \describe{
+#'     \item{data}{the observed data.}
+#'     \item{data.full}{the full dataset, as a list of data.tables. Each
+#'       \code{data.table} contains the data at the end of a time interval, by
+#'       by population segment (row) and variable (column).}
+#'     \item{params}{the parameters used to generate the data.}
+#'   }
+#' @keywords internal
 
 amss.sim <- function(data = NULL, data.full = NULL, params = NULL) {
 
@@ -51,8 +57,9 @@ amss.sim <- function(data = NULL, data.full = NULL, params = NULL) {
 #'
 #' @param object object of class amss.sim
 #' @return matrix of budgets by budget period (row) and media name (column)
+#' @keywords internal
 
-.GetBudget <- function(object) {
+GetBudget <- function(object) {
 
   # Check input.
   assertthat::assert_that(inherits(object, "amss.sim"))
@@ -76,12 +83,13 @@ amss.sim <- function(data = NULL, data.full = NULL, params = NULL) {
 #'
 #' @param object object of class amss.sim
 #' @return integer population size
+#' @keywords internal
 
-.GetPopulation <- function(object) {
+GetPopulation <- function(object) {
 
   # Check input.
   assertthat::assert_that(inherits(object, "amss.sim"))
 
   # Return population size, as read from the parameters.
-  return(as.integer(object$params$nat.mig.params$population))
+  return(object$params$nat.mig.params$population)
 }

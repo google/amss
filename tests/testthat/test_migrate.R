@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-context(".MigrateMarginal")
+context("MigrateMarginal")
 
 test_that("one-dimensional migration is handled correctly", {
-  dt <- .InitStateData()
+  dt <- InitStateData()
   dt[, pop := rbinom(nrow(dt), 2000, 0.5)]
   aff.pop <- sapply(dt[, pop], function(n) rbinom(1, n, 0.5))
   copy.dt <- data.table::copy(dt)
 
   # Dimension 1: market state.
-  .MigrateMarginal(copy.dt, aff.pop, "market", matrix(c(0, 1), 2, 2, TRUE))
+  MigrateMarginal(copy.dt, aff.pop, "market", matrix(c(0, 1), 2, 2, TRUE))
   expect_equal(copy.dt[market == "out.market", pop],
                dt[market == "out.market", pop] -
                   aff.pop[dt[, market == "out.market"]])
@@ -29,7 +29,7 @@ test_that("one-dimensional migration is handled correctly", {
 
   # Dimension 5: loyalty state.
   copy.dt <- data.table::copy(dt)
-  .MigrateMarginal(copy.dt, aff.pop, "loyalty", matrix(c(0, 1, 0), 3, 3, TRUE))
+  MigrateMarginal(copy.dt, aff.pop, "loyalty", matrix(c(0, 1, 0), 3, 3, TRUE))
   dt[, aff.pop := aff.pop]
   expect_equal(
       copy.dt[favorability != "favorable", sum(pop), by = "loyalty"][, V1],

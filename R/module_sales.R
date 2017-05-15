@@ -82,7 +82,7 @@ utils::globalVariables(c(
 #'   'favorability', 'loyalty', and 'availability' is expected. Any
 #'   missing members will have no effect. The default value, \code{list()}
 #'   results in no post-purchase migration.
-#' @return invisible(NULL). \code{data.dt} updated by reference.
+#' @return \code{invisible(NULL)}. \code{data.dt} updated by reference.
 #' @export
 
 DefaultSalesModule <- function(
@@ -118,9 +118,9 @@ DefaultSalesModule <- function(
   # Check parameters.
   if (current.time == 1) {
     assertthat::assert_that(is.numeric(price), all(price >= 0))
-    .CheckSalesActivity(advertiser.demand.intercept)
-    .CheckSalesActivity(advertiser.demand.slope)
-    .CheckSalesActivity(competitor.demand.max)
+    CheckSalesActivity(advertiser.demand.intercept)
+    CheckSalesActivity(advertiser.demand.slope)
+    CheckSalesActivity(competitor.demand.max)
     assertthat::assert_that(is.numeric(purchase.quantity.intercept))
     assertthat::assert_that(is.numeric(purchase.quantity.slope))
     if (any(purchase.quantity.slope < 0)) {
@@ -128,8 +128,8 @@ DefaultSalesModule <- function(
               " <purchase.quantity.slope> for a negative price vs. quantity",
               " purchased by each purchaser relationship.")
     }
-    .CheckListNames(advertiser.transitions, colnames(kBrandStates))
-    .CheckListNames(competitor.transitions, colnames(kBrandStates))
+    CheckListNames(advertiser.transitions, colnames(kBrandStates))
+    CheckListNames(competitor.transitions, colnames(kBrandStates))
   }
 
   # Get product price.
@@ -137,8 +137,8 @@ DefaultSalesModule <- function(
 
   # Calculate the probability of purchasing the advertiser's brand, given no
   # competition.
-  advertiser.demand.intercept <- .MultiplyBySegment(advertiser.demand.intercept)
-  advertiser.demand.slope <- .MultiplyBySegment(advertiser.demand.slope)
+  advertiser.demand.intercept <- MultiplyBySegment(advertiser.demand.intercept)
+  advertiser.demand.slope <- MultiplyBySegment(advertiser.demand.slope)
   if (current.time == 1 && any(advertiser.demand.slope < 0)) {
     warning("Generally, the user should specify positive",
             " <advertiser.demand.slope> for a negative relationship",
@@ -153,9 +153,9 @@ DefaultSalesModule <- function(
   # Add competition, and calculate final probabilities of consumers
   # purchasing from the advertiser vs. competitor brands.
   competitor.demand.max <-
-      pmax(0, pmin(1, .MultiplyBySegment(competitor.demand.max)))
+      pmax(0, pmin(1, MultiplyBySegment(competitor.demand.max)))
   competitor.demand.replacement <-
-      pmax(0, pmin(1, .MultiplyBySegment(competitor.demand.replacement)))
+      pmax(0, pmin(1, MultiplyBySegment(competitor.demand.replacement)))
   competitor.demand <- pmax(
       0,
       competitor.demand.max -
@@ -169,7 +169,7 @@ DefaultSalesModule <- function(
   n.purchasing <- matrix(0L, nrow(data.dt), 2)
   for (iter.seg in 1:nrow(data.dt)) {
     n.purchasing[iter.seg, ] <-
-        rmultinom(1, data.dt[iter.seg, pop],
+        RMultinom(1, data.dt[iter.seg, pop],
                   c(advertiser.demand[iter.seg], competitor.demand[iter.seg],
                     1 - advertiser.demand[iter.seg] -
                     competitor.demand[iter.seg]))[1:2]
@@ -185,11 +185,11 @@ DefaultSalesModule <- function(
   # Simulate the total number of sales.
   data.dt[,
           brand.sales := fn.env$n.purchasing[, 1] +
-              rpois(nrow(n.purchasing),
+              RPois(nrow(n.purchasing),
                     n.purchasing[, 1] * (advertiser.units.per.purchaser - 1))]
   data.dt[,
           competitor.sales := fn.env$n.purchasing[, 2] +
-              rpois(nrow(n.purchasing),
+              RPois(nrow(n.purchasing),
                     n.purchasing[, 2] * (competitor.units.per.purchaser - 1))]
 
   # Calculate the revenue and profit.
@@ -201,14 +201,14 @@ DefaultSalesModule <- function(
   advertiser.transitions <- c(  # All purchasers satiate.
       advertiser.transitions,
       list(satiation = matrix(c(1, 1, 0, 0), 2)))
-  .MigrateMultiple(data.dt, n.purchasing[, 1],
-                   names(advertiser.transitions), advertiser.transitions)
+  MigrateMultiple(data.dt, n.purchasing[, 1],
+                  names(advertiser.transitions), advertiser.transitions)
   # Simulate changes in people who bought the competitor's brand.
   competitor.transitions <- c(  # All purchasers satiate.
       competitor.transitions,
       list(satiation = matrix(c(1, 1, 0, 0), 2)))
-  .MigrateMultiple(data.dt, n.purchasing[, 2],
-                   names(competitor.transitions), competitor.transitions)
+  MigrateMultiple(data.dt, n.purchasing[, 2],
+                  names(competitor.transitions), competitor.transitions)
 }
 
 #' Warn users of possibility of consumers outside the 'purchase' state
@@ -221,8 +221,9 @@ DefaultSalesModule <- function(
 #' @return \code{NULL}. If the parameter specification breaks enforcement of
 #'   only consumers who have attained the 'purchase' state being able to make a
 #'   purchase, the function signals a warning.
+#' @keywords internal
 
-.CheckSalesActivity <- function(x) {
+CheckSalesActivity <- function(x) {
 
   # Check condition, and output warning if failed.
   if (any(x$activity[1:2] != 0)) {

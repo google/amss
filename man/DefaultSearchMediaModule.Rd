@@ -86,7 +86,7 @@ interventions. A named list with members 'activity', 'favorability',
 members will have no effect.}
 }
 \value{
-invisible(NULL). \code{data.dt} updated by reference.
+\code{invisible(NULL)}. \code{data.dt} updated by reference.
 }
 \description{
 Simulate the behavior of a paid and/or organic search, including observable

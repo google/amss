@@ -60,7 +60,7 @@ utils::globalVariables(c("pop", "satiation", ".", "market", "time.index"))
 #'   these dimensions, and control how quickly the population returns to
 #'   its equilibrium allocation across segments after marketing
 #'   interventions.
-#' @return invisible(NULL). data.dt is updated by reference.
+#' @return \code{invisible(NULL)}. \code{data.dt} is updated by reference.
 #' @export
 
 DefaultNatMigModule <- function(
@@ -89,13 +89,13 @@ DefaultNatMigModule <- function(
     assertthat::assert_that(is.numeric(sat.decay), length(sat.decay) == 1,
                             sat.decay >= 0, sat.decay <= 1)
     for (iter.dim in setdiff(colnames(kAllStates), c("market", "satiation"))) {
-      curr.prop <- get(.PasteD("prop", iter.dim))
-      curr.states <- get(paste0("k", .Capitalize(iter.dim), "States"))
+      curr.prop <- get(PasteD("prop", iter.dim))
+      curr.states <- get(paste0("k", Capitalize(iter.dim), "States"))
       assertthat::assert_that(
           is.numeric(curr.prop), length(curr.prop) == length(curr.states),
           all(curr.prop >= 0),  all(curr.prop <= 1))
     }
-    .CheckListNames(transition.matrices)
+    CheckListNames(transition.matrices)
   }
 
   # Calculate market rate.
@@ -111,14 +111,14 @@ DefaultNatMigModule <- function(
 
   # If this is the first timepoint, initialize population.
   if (curr.time == 1) {
-    .InitPop(data.dt, population, market.rate,
-             prop.activity, prop.favorability,
-             prop.loyalty, prop.availability)
+    InitPop(data.dt, population, market.rate,
+            prop.activity, prop.favorability,
+            prop.loyalty, prop.availability)
   }
   # Update each dimension of population segmentation, one at a time.
-  .UpdateMarket(data.dt, market.rate, prop.activity)
-  .Desatiate(data.dt, sat.decay, prop.activity)
-  .UpdateMarketingResponsiveStates(data.dt, transition.matrices)
+  UpdateMarket(data.dt, market.rate, prop.activity)
+  Desatiate(data.dt, sat.decay, prop.activity)
+  UpdateMarketingResponsiveStates(data.dt, transition.matrices)
 
   return(invisible(NULL))
 }
@@ -142,10 +142,10 @@ DefaultNatMigModule <- function(
 #' @param prop.availability vector of nonnegative values summing to 1,
 #'   representing the proportion of the population to be assigned to each
 #'   availability state.
-#' @return invisible(NULL). data.dt is updated as a side effect of this
-#'   function.
+#' @return \code{invisible(NULL)}. \code{data.dt} is updated by reference.
+#' @keywords internal
 
-.InitPop <- function(
+InitPop <- function(
     data.dt, pop.total,
     market.rate = 1,
     prop.activity = rep(1 / length(kActivityStates), length(kActivityStates)),
@@ -167,15 +167,15 @@ DefaultNatMigModule <- function(
   data.dt[.("out.market", "unsatiated", "inactive",
             "favorable", "switcher", "average"),
           pop := pop.total]
-  .UpdateMarket(data.dt, market.rate, prop.activity)
-  .MigrateMultiple(data.dt, data.dt[, pop],
-                   c("loyalty", "favorability", "availability"),
-                   list(matrix(prop.loyalty, length(kLoyaltyStates),
-                               length(kLoyaltyStates), TRUE),
-                        matrix(prop.favorability, length(kFavorabilityStates),
-                               length(kFavorabilityStates), TRUE),
-                        matrix(prop.availability, length(kAvailabilityStates),
-                               length(kAvailabilityStates), TRUE)))
+  UpdateMarket(data.dt, market.rate, prop.activity)
+  MigrateMultiple(data.dt, data.dt[, pop],
+                  c("loyalty", "favorability", "availability"),
+                  list(matrix(prop.loyalty, length(kLoyaltyStates),
+                              length(kLoyaltyStates), TRUE),
+                       matrix(prop.favorability, length(kFavorabilityStates),
+                              length(kFavorabilityStates), TRUE),
+                       matrix(prop.availability, length(kAvailabilityStates),
+                              length(kAvailabilityStates), TRUE)))
   return(invisible(NULL))
 }
 
@@ -188,9 +188,10 @@ DefaultNatMigModule <- function(
 #' @param prop.activity single value between 0 and 1, representing proportion
 #'   of population to be assigned to each activity state, given they are
 #'   "responsive," i.e., "in.market" and "unsatiated."
-#' @return invisible(NULL). data.dt is updated by reference.
+#' @return \code{invisible(NULL)}. \code{data.dt} is updated by reference.
+#' @keywords internal
 
-.UpdateMarket <- function(
+UpdateMarket <- function(
     data.dt, target.rate,
     prop.activity = rep(1 / length(kActivityStates), length(kActivityStates))) {
 
@@ -201,7 +202,7 @@ DefaultNatMigModule <- function(
   # to "in.market" state.
   if (target.rate > current.rate) {
     mig.rate <- (target.rate - current.rate) / (1 - current.rate)
-    .MigrateMultiple(
+    MigrateMultiple(
         data.dt, data.dt[, pop * (market == "out.market")],
         c("market", "activity"),
         list(matrix(c(1 - mig.rate, mig.rate, 0, 1), 2, 2, TRUE),
@@ -212,7 +213,7 @@ DefaultNatMigModule <- function(
   # "out.of.market" state.
   if (target.rate < current.rate){
     mig.rate <- (current.rate - target.rate) / current.rate
-    .MigrateMarginal(
+    MigrateMarginal(
         data.dt, data.dt[, pop * (market == "in.market")],
         "market",
         matrix(c(1, 0,
@@ -228,7 +229,8 @@ DefaultNatMigModule <- function(
 #' @param sat.decay rate for the geometric decay of satiation
 #' @param prop.activity proportion of population assigned to each activity
 #'   state, given that they are responsive.
-#' @return invisible(NULL). data.dt is updated by reference.
+#' @return \code{invisible(NULL)}. \code{data.dt} is updated by reference.
+#' @keywords internal
 #'
 #' @note
 #' Satiation has geometric decay with rate \code{sat.decay}. Thus,
@@ -237,14 +239,14 @@ DefaultNatMigModule <- function(
 #' by desatiation are assigned activity states at rates defined by
 #' prop.activity.
 
-.Desatiate <- function(
+Desatiate <- function(
     data.dt, sat.decay,
     prop.activity = rep(1 / length(kActivityStates), length(kActivityStates))) {
 
   # Currently satiated individuals become unsatiated with probability
   # "sat.decay". If the desatiated individuals were "in.market", their activity
   # state also updates.
-  .MigrateMultiple(
+  MigrateMultiple(
       data.dt, data.dt[, pop * (satiation == "satiated")],
       c("satiation", "activity"),
       list(matrix(c(1 - sat.decay, sat.decay, 0, 1), 2, 2, TRUE),
@@ -262,18 +264,19 @@ DefaultNatMigModule <- function(
 #'   interventions. A named list with members 'activity', 'favorability',
 #'   'loyalty', and 'availability' is expected. By default, any missing
 #'   members will have no effect.
-#' @return invisible(NULL). data.dt is updated by reference.
+#' @return \code{invisible(NULL)}. \code{data.dt} is updated by reference.
+#' @keywords internal
 
-.UpdateMarketingResponsiveStates <- function(
+UpdateMarketingResponsiveStates <- function(
     data.dt, transition.matrices = list()) {
 
   # Check input.
-  .CheckListNames(transition.matrices,
-                  setdiff(colnames(kAllStates), c("market", "satiation")))
+  CheckListNames(transition.matrices,
+                 setdiff(colnames(kAllStates), c("market", "satiation")))
 
   # Perform migration.
-  .MigrateMultiple(data.dt, data.dt[, pop],
-                   names(transition.matrices),
-                   transition.matrices)
+  MigrateMultiple(data.dt, data.dt[, pop],
+                  names(transition.matrices),
+                  transition.matrices)
   return(invisible(NULL))
 }

@@ -26,8 +26,9 @@ utils::globalVariables(c("pop", "pop.in", "pop.out"))
 #'   transition matrix whose dimensionality matches the number of states
 #'   in vector.counts is used.
 #' @return number of individuals in each state after migration
+#' @keywords internal
 
-.ApplyTransitionMatrix <- function(vector.counts, transition.matrices) {
+ApplyTransitionMatrix <- function(vector.counts, transition.matrices) {
 
   # Given a transition matrix, simulate the migration process.
   if (!is.list(transition.matrices)) {
@@ -45,7 +46,7 @@ utils::globalVariables(c("pop", "pop.in", "pop.out"))
     migrated.pop <- integer(length(vector.counts))
     for (iter in 1:length(vector.counts)) {
       migrated.pop <- migrated.pop +
-          drop(rmultinom(1, vector.counts[iter], transition.matrices[iter, ]))
+          drop(RMultinom(1, vector.counts[iter], transition.matrices[iter, ]))
     }
 
     # Return new population segmentation.
@@ -58,7 +59,7 @@ utils::globalVariables(c("pop", "pop.in", "pop.out"))
   num.states <- sapply(transition.matrices, nrow)
   transition.matrix <-
       transition.matrices[[match(length(vector.counts), num.states)]]
-  return(.ApplyTransitionMatrix(vector.counts, transition.matrix))
+  return(ApplyTransitionMatrix(vector.counts, transition.matrix))
 }
 
 #' Simulate migration in a single dimension of population segmentation.
@@ -73,10 +74,11 @@ utils::globalVariables(c("pop", "pop.in", "pop.out"))
 #'   kAllStates.
 #' @param transition.matrix transition matrix specifying probabilities of
 #'   migration between states.
-#' @return invisible(NULL). data.dt is updated by reference.
+#' @return \code{invisible(NULL)}. \code{data.dt} is updated by reference.
+#' @keywords internal
 
-.MigrateMarginal <- function(data.dt, migrating.pop.size,
-                             migration.dim, transition.matrix) {
+MigrateMarginal <- function(data.dt, migrating.pop.size,
+                            migration.dim, transition.matrix) {
 
   # Check input.
   func.env <- environment()
@@ -123,7 +125,7 @@ utils::globalVariables(c("pop", "pop.in", "pop.out"))
     changing.dimensions <- migration.dim
   }
   data.dt[,
-          pop.in := .ApplyTransitionMatrix(pop.out, transition.matrices),
+          pop.in := ApplyTransitionMatrix(pop.out, transition.matrices),
           by = eval(setdiff(key(data.dt), changing.dimensions))]
   data.dt[, pop := pop - pop.out + pop.in]
   return(invisible(NULL))
@@ -141,11 +143,12 @@ utils::globalVariables(c("pop", "pop.in", "pop.out"))
 #' @param migration.dims a character vector of dimensions of migration, by
 #'   name.
 #' @param transition.matrices a list of transition matrices for each dimension.
-#' @return invisible(NULL). data.dt is updated by reference.
+#' @return \code{invisible(NULL)}. \code{data.dt} is updated by reference.
+#' @keywords internal
 
-.MigrateMultiple <- function(data.dt, migrating.pop.size,
-                             migration.dims = character(),
-                             transition.matrices = list()) {
+MigrateMultiple <- function(data.dt, migrating.pop.size,
+                            migration.dims = character(),
+                            transition.matrices = list()) {
 
   # Check input.
   stopifnot(length(transition.matrices) == length(migration.dims))
@@ -153,7 +156,7 @@ utils::globalVariables(c("pop", "pop.in", "pop.out"))
   # Perform each migration in sequence.
   if (length(migration.dims) > 0) {
     for (iter.dim in 1:length(migration.dims)) {
-      .MigrateMarginal(data.dt, migrating.pop.size, migration.dims[iter.dim],
+      MigrateMarginal(data.dt, migrating.pop.size, migration.dims[iter.dim],
                       transition.matrices[[iter.dim]])
       migrating.pop.size <- data.dt[, pop.in]
     }

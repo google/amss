@@ -15,15 +15,15 @@
 context("DefaultNatMigModule")
 
 test_that("migration results in approximately the expected segmentation", {
-  curr.dt <- .InitStateData()
+  curr.dt <- InitStateData()
   DefaultNatMigModule(
       curr.dt,
-      population = 7e8L,
+      population = 7e8,
       market.rate.trend = 0.8,
       market.rate.seas = 1,
       sat.decay = 0.5)
-  expect_equal(curr.dt[, sum(pop)], 7e8L)
-  expect_equal(curr.dt[satiation == "satiated", sum(pop)], 0L)
+  expect_equal(curr.dt[, sum(pop)], 7e8)
+  expect_equal(curr.dt[satiation == "satiated", sum(pop)], 0)
   activity.prop <- curr.dt[market == "in.market" & satiation == "unsatiated",
                            sum(pop), by = "activity"][, V1 / sum(V1)]
   availability.prop <- curr.dt[, sum(pop), by = "availability"][, V1 / sum(V1)]
@@ -31,14 +31,14 @@ test_that("migration results in approximately the expected segmentation", {
   expect_true(all(availability.prop %between% c(0.30, 0.37)))
 })
 
-context(".InitPop")
+context("InitPop")
 
 test_that("the data is initialized correctly", {
-  testpop.dt <- .InitStateData()
+  testpop.dt <- InitStateData()
   testpop.dt[, pop.total := 100][, market.rate := 0.3]
-  .InitPop(testpop.dt, pop.total = 100, market.rate = 0.3,
-           prop.activity = c(0.5, 0.3, 0.2),
-           prop.favorability = c(.15, .1, .2, .35, .2))
+  InitPop(testpop.dt, pop.total = 100, market.rate = 0.3,
+          prop.activity = c(0.5, 0.3, 0.2),
+          prop.favorability = c(0.15, 0.1, 0.2, 0.35, 0.2))
   # Population.
   expect_equal(100, testpop.dt[, sum(pop)])
   # Satiation is 0.
@@ -46,17 +46,17 @@ test_that("the data is initialized correctly", {
       testpop.dt[.(c("out.market", "in.market"), "satiated"), pop == 0]))
 })
 
-context(".UpdateMarketingResponsiveStates")
+context("UpdateMarketingResponsiveStates")
 
 test_that("migration happens in the correct sequence and proportions", {
-  orig.data <- .InitStateData(time.index = 10)
-  orig.data[, pop := rbinom(nrow(orig.data), 2000, 0.5)]
+  orig.data <- InitStateData(time.index = 10)
+  orig.data[, pop := RBinom(nrow(orig.data), 2000, 0.5)]
   copied.data <- data.table::copy(orig.data)
 
   # Use 0-1 matrices for testing since that removes randomness.
   activity.trans <- matrix(c(0, 1, 0, 0, 0, 1, 1, 0, 0), 3,
                            byrow = TRUE)
-  .UpdateMarketingResponsiveStates(
+  UpdateMarketingResponsiveStates(
       copied.data,
       transition.matrices = list(activity = activity.trans))
 
@@ -80,10 +80,10 @@ test_that("migration happens in the correct sequence and proportions", {
                   by = names(kBrandStates)][, pop])
 })
 
-context(".UpdateMarket")
+context("UpdateMarket")
 
 test_that("migration in one dimension does not affect unrelated dimensions", {
-  test.data <- .InitStateData(time.index = 10)
+  test.data <- InitStateData(time.index = 10)
   test.data[, pop := rbinom(nrow(test.data), 2000, 0.5)]
   GetRate <- function(dt) {
     return(dt[market == "in.market", sum(pop)] / dt[, sum(pop)])
@@ -91,7 +91,7 @@ test_that("migration in one dimension does not affect unrelated dimensions", {
   curr.rate <- GetRate(test.data)
   # Try increasing.
   copy.data <- data.table::copy(test.data)
-  .UpdateMarket(copy.data, 1)
+  UpdateMarket(copy.data, 1)
   expect_equal(1, GetRate(copy.data))
   expect_equal(test.data[, sum(pop),
                          by = c("satiation", "favorability",
@@ -101,7 +101,7 @@ test_that("migration in one dimension does not affect unrelated dimensions", {
                                 "loyalty", "availability")])
   # Try decreasing.
   copy.data <- data.table::copy(test.data)
-  .UpdateMarket(copy.data, 0)
+  UpdateMarket(copy.data, 0)
   expect_equal(0, GetRate(copy.data))
   expect_equal(test.data[, sum(pop),
                          by = c("satiation", "favorability",

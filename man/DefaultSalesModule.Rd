@@ -87,7 +87,7 @@ missing members will have no effect. The default value, \code{list()}
 results in no post-purchase migration.}
 }
 \value{
-invisible(NULL). \code{data.dt} updated by reference.
+\code{invisible(NULL)}. \code{data.dt} updated by reference.
 }
 \description{
 Simulate consumer purchase behavior, and thus the advertiser's and its

@@ -4,7 +4,7 @@
 \alias{SimulateAMSS}
 \title{Generate simulation objects under the AMSS framework.}
 \usage{
-SimulateAMSS(time.n, geo.index = 0, nat.mig.module = DefaultNatMigModule,
+SimulateAMSS(time.n, nat.mig.module = DefaultNatMigModule,
   nat.mig.params = list(), media.names = character(),
   media.modules = rep(list(DefaultTraditionalMediaModule),
   length(media.names)), media.params = rep(list(list()), length(media.names)),
@@ -13,8 +13,6 @@ SimulateAMSS(time.n, geo.index = 0, nat.mig.module = DefaultNatMigModule,
 }
 \arguments{
 \item{time.n}{number of timepoints.}
-
-\item{geo.index}{single value, value of geo index for entire dataset.}
 
 \item{nat.mig.module}{specifications of class \code{seq.specs}, to be used
 to create the non-actionable drivers module and then generate its
@@ -49,15 +47,29 @@ default, \code{SurfaceData()} will pick up variables with names
 matching "revenue", "profit", "sales", "volume", and/or "spend".}
 }
 \value{
-an object of class \code{amss}, containing
+an object of class \code{amss.sim}, containing
   \describe{
-    \item{data:}{observed data.}
-    \item{data.full:}{the full data, as a list of data.tables.}
-    \item{params:}{the simulation settings used to generate the data.}
-    }
+    \item{data}{the observed data.}
+    \item{data.full}{the full dataset, as a list of data.tables. Each
+      \code{data.table} contains the data at the end of a time interval, by
+      by population segment (row) and variable (column).}
+    \item{params}{the parameters used to generate the data.}
+  }
 }
 \description{
 Produces an \code{amss.sim} object that contains the simulated data and can
 be used to derive ground truth about the scenario.
+}
+\details{
+Objects of class \code{amss.sim} contain the full output from running a
+simulation scenario. This output includes the observed data, the complete
+dataset generated during the simulation process, and the parameters passed
+to the simulation function in order to generate the simulated data. The
+observed data is meant to be used by modelers. The complete dataset can be
+useful for users who want a more complete understanding of the forces
+operating in a simulation scenario. The parameter list is essential for
+generating future datasets based on the same, or slightly modified,
+simulation settings in order to obtain ground truth about the simulation
+scenario.
 }
 

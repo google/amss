@@ -16,37 +16,37 @@ context("CalculateROAS")
 
 test_that("Attribution results are reasonable", {
   set.seed(100)
-  mroas <- CalculateROAS(test.data, media.names = "traditional",
+  mroas <- CalculateROAS(test.data,
+                         media.names = "traditional",
                          budget.periods = 3,
                          t.start = 21, t.end = 30,
-                         budget.proportion = 0.99,
-                         min.reps = 2, max.time = 1)
-  roas <- CalculateROAS(test.data, media.names = "traditional",
+                         budget.proportion = 0.99)
+  roas <- CalculateROAS(test.data,
+                        media.names = "traditional",
                         budget.periods = 3,
                         t.start = 21, t.end = 30,
-                        budget.proportion = 0,
-                        min.reps = 2, max.time = 1)
-  expect_true(mroas > -.04 & mroas < 0.04)
-  expect_true(roas > 0.23 & roas < 0.31)
+                        budget.proportion = 0)
+  expect_true(mroas > 0 & mroas < 0.01)
+  expect_true(roas > 0.26 & roas < 0.27)
 })
 
 context(".GenerateDataUnderNewBudget")
 
 test_that("data regeneration starts and ends at the correct time", {
-  new.data.1 <- .GenerateDataUnderNewBudget(test.data)
+  new.data.1 <- GenerateDataUnderNewBudget(test.data)
   expect_identical(names(new.data.1), c(names(test.data$data), "rep.index"))
   # Start after first time period.
-  new.data.2 <- .GenerateDataUnderNewBudget(
+  new.data.2 <- GenerateDataUnderNewBudget(
       test.data, t.start = 11, t.end = 20)
   id.idx <- test.args$media.params[[1]]$budget.index == 1
   expect_equal(new.data.2[id.idx, brand.sales],
                test.data$data[id.idx, brand.sales])
   # Multiple reps, and response metric instead of entire dataset.
   set.seed(100)
-  new.data.4 <- .GenerateDataUnderNewBudget(
+  new.data.4 <- GenerateDataUnderNewBudget(
       test.data, t.start = 31, reps = 2)
   set.seed(100)
-  new.data.5 <-.GenerateDataUnderNewBudget(
+  new.data.5 <- GenerateDataUnderNewBudget(
       test.data, t.start = 31,
       reps = 2, response.metric = "brand.sales")
   expect_identical(nrow(new.data.4), 2L * nrow(new.data.1))

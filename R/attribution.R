@@ -42,12 +42,18 @@ utils::globalVariables(c("pop", "revenue", "rep.index", "V1", "total.spend"))
 #'   the modified budget periods in order to include lagged effects in the
 #'   calculation.
 #' @param scaled.pop.size \code{CalculateROAS} scales up the population size to
-#'   reduce the variability of its estimates. This number should be chosen
-#'   to be as large as possible while avoiding integer overflow during
-#'   data simulation.
+#'   reduce the variability of its estimates. This is equivalent to running
+#'   the simulation for multiple repetitions to reduce variability. The
+#'   default value should provide sufficient accuracy in most use cases.
+#'   Extremely large values may result in numerical issues.
 #' @param min.reps integer representing the initial number of datasets to
-#'   generate from each budget setting. A reasonable number of initial
-#'   datasets is needed to estimate the amount of variability accurately
+#'   generate from each budget setting. The default value of 2 allows the user
+#'   to make a rough check that the accuracy is indeed good under the chosen
+#'   settings. This default was chosen under the assumption that the default
+#'   \code{scaled.pop.size} is large enough to accurately measure ROAS using 1
+#'   repetition, with the 2nd being used as confirmation of the accuracy. Higher
+#'   precision and more accurate measurement of the precision can be achieved
+#'   with more repetitions.
 #' @param max.coef.var numeric, the target coefficient of variation. The
 #'   function takes additional samples of the ROAS until it runs out of
 #'   time, attains the target coefficient of variation, or attains the
@@ -60,7 +66,9 @@ utils::globalVariables(c("pop", "revenue", "rep.index", "V1", "total.spend"))
 #'   function from taking additional samples beyond the initial sample
 #'   generated according to \code{min.reps}. The function takes additional
 #'   samples of the ROAS until it runs out of time, attains the target
-#'   coefficient of variation, or attains the target margin of error.
+#'   coefficient of variation, or attains the target margin of error. The
+#'   default value of 0 forces the function to use precisely \code{min.reps}
+#'   repetitions.
 #' @param verbose boolean. If TRUE, output measures of the accuracy of the
 #'   reported ROAS, including the full sample of ROAS values.
 #' @return numeric value for ROAS, or, if \code{verbose = TRUE}, a list with
@@ -76,9 +84,9 @@ CalculateROAS <- function(
     budget.proportion = rep(0, length(media.names)),
     t.start = 1,
     t.end = object$params$time.n,
-    scaled.pop.size = .Machine$integer.max / 100,
-    min.reps = 10,
-    max.coef.var = 0.01, max.margin.error = 0.01, max.time = 30,
+    scaled.pop.size = 1e18,
+    min.reps = 2,
+    max.coef.var = 0.01, max.margin.error = 0.01, max.time = 0,
     verbose = FALSE) {
 
   if (is.null(object$params$media.names) ||
@@ -91,11 +99,11 @@ CalculateROAS <- function(
   assertthat::assert_that(inherits(object, "amss.sim"))
 
   # Get the original budget settings.
-  orig.budget <- .GetBudget(object)
+  orig.budget <- GetBudget(object)
 
   # Check the other parameters.
   if (!is.null(new.budget)) {
-    assertthat::assert_that(dim(new.budget) == dim(orig.budget))
+    assertthat::assert_that(all(dim(new.budget) == dim(orig.budget)))
   }
   assertthat::assert_that(all(media.names %in% object$params$media.names))
   assertthat::assert_that(all(budget.periods >= 1))
@@ -123,26 +131,26 @@ CalculateROAS <- function(
   # Modified the object with an updated population size, to reduce runtime.
   # Note that, since only values in column "pop" affect the values in the
   # regenerated data. That is the only column that needs updating.
-  scaled.pop.size <- as.integer(scaled.pop.size)
-  orig.pop <- .GetPopulation(object)
-  pop.multiplier <- scaled.pop.size / orig.pop
+  orig.pop <- GetPopulation(object)
   mod.object <- data.table::copy(object)
   lapply(mod.object$data.full,
-         function(dt) dt[, pop := .AdjustPopulation(pop, scaled.pop.size)])
+         function(dt) dt[, pop := AdjustPopulation(pop, scaled.pop.size)])
+  scaled.pop.size <- mod.object$data.full[[1]][, sum(pop)]
+  pop.multiplier <- scaled.pop.size / orig.pop
   mod.object$params$nat.mig.params$population <- scaled.pop.size
 
   # Generate data from counterfactual budget settings.
   start.time <- Sys.time()
-  new.data <- .GenerateDataUnderNewBudget(
+  new.data <- GenerateDataUnderNewBudget(
       mod.object, new.budget * pop.multiplier,
       reps = min.reps, t.start = t.start, t.end = t.end)
   # Generate more data from the original budget settings to average out noise.
-  orig.data <- .GenerateDataUnderNewBudget(
+  orig.data <- GenerateDataUnderNewBudget(
       mod.object, orig.budget * pop.multiplier,
       reps = min.reps, t.start = t.start, t.end = t.end)
 
   # Calculate the ROAS based on the current sample.
-  roas.sample <- .CalculateSampleROAS(new.data, orig.data)
+  roas.sample <- CalculateSampleROAS(new.data, orig.data)
   # Get the estimate.
   roas.est <- mean(roas.sample)
   # Get its precision as a standard error.
@@ -168,14 +176,14 @@ CalculateROAS <- function(
     print(paste("Running additional sample", counter, "for more accuracy."))
     print(paste(round(difftime(Sys.time(), start.time, units = "mins")),
                 "minutes elapsed."))
-    new.data.1 <- .GenerateDataUnderNewBudget(
+    new.data.1 <- GenerateDataUnderNewBudget(
       object = mod.object, new.budget = new.budget * pop.multiplier,
       t.start = t.start, t.end = t.end)
-    orig.data.1 <- .GenerateDataUnderNewBudget(
+    orig.data.1 <- GenerateDataUnderNewBudget(
         object = mod.object, new.budget = orig.budget * pop.multiplier,
         t.start = t.start, t.end = t.end)
     roas.sample <- c(roas.sample,
-                     .CalculateSampleROAS(new.data.1, orig.data.1))
+                     CalculateSampleROAS(new.data.1, orig.data.1))
     roas.est <- mean(roas.sample)
     roas.standard.error <- sd(roas.sample) / sqrt(length(roas.sample))
     roas.margin.error <- roas.standard.error * qt(0.975, length(roas.sample))
@@ -209,8 +217,9 @@ CalculateROAS <- function(
 #'   match.
 #' @return vector of ROAS estimates from each pair of sample datasets in dt1
 #'   and dt2.
+#' @keywords internal
 
-.CalculateSampleROAS <- function(dt1, dt2) {
+CalculateSampleROAS <- function(dt1, dt2) {
 
   return((dt1[, sum(revenue), by = rep.index][, V1] -
           dt2[, sum(revenue), by = rep.index][, V1]) /
@@ -233,10 +242,11 @@ CalculateROAS <- function(
 #' @param t.start time point at which to start generating new data
 #' @param t.end time point at which to stop generating new data
 #' @return The list of all generated datasets or a vector of averaged values.
+#' @keywords internal
 
-.GenerateDataUnderNewBudget <- function(
+GenerateDataUnderNewBudget <- function(
     object,
-    new.budget = .GetBudget(object),
+    new.budget = GetBudget(object),
     response.metric = NULL,
     reps = 1,
     t.start = 1,
@@ -268,8 +278,8 @@ CalculateROAS <- function(
   # Generate data.
   new.data <- lapply(
       1:reps,
-      function(r) .SurfaceData(
-          do.call(`.SimulateData`, new.params[formalArgs(`.SimulateData`)]),
+      function(r) SurfaceData(
+          do.call(`SimulateData`, new.params[formalArgs(`SimulateData`)]),
           new.params$names.agg.const,
           new.params$names.agg.sum)[, rep.index := r])
   new.data <- rbindlist(new.data)
@@ -277,28 +287,23 @@ CalculateROAS <- function(
     return(new.data)
   } else {
     return(new.data[,
-                    eval(.ParseT(paste0("mean(", response.metric, ")"))),
-                    by = c("time.index", "geo.index")][, V1])
+                    eval(ParseT(paste0("mean(", response.metric, ")"))),
+                    by = "time.index"][, V1])
   }
 }
 
 #' Adjust population vector to a new total
 #'
-#' Adjust population proportionally to a new total population size, rounding
-#' by the largest remainder method
+#' Adjust population proportionally to a new total population size, rounding up
+#' when necessary.
 #'
 #' @param orig.pop original population vector
 #' @param new.total.pop new total population size
 #' @return new population vector of class integer
+#' @keywords internal
 
-.AdjustPopulation <- function(orig.pop, new.total.pop) {
+AdjustPopulation <- function(orig.pop, new.total.pop) {
 
-  pop.multiplier <- new.total.pop / sum(orig.pop)
-  precise.pop <- orig.pop * pop.multiplier
-  quotient.pop <- floor(precise.pop)
-  remainder.pop <- precise.pop - quotient.pop
-  round.up.idx <- order(
-      remainder.pop,
-      decreasing = TRUE)[1:(new.total.pop - sum(quotient.pop))]
-  return(as.integer(quotient.pop + (1:length(quotient.pop) %in% round.up.idx)))
+  pop.multiplier <- ceiling(new.total.pop / sum(orig.pop))
+  return(orig.pop * pop.multiplier)
 }

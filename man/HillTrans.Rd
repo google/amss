@@ -22,4 +22,5 @@ tranformed value = beta / (1 + (x / ec) ^ (-slope))
 The Hill function is one option for parameterizing a flexible set of S-shaped
 curves.
 }
+\keyword{internal}
 

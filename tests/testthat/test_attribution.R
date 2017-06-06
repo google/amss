@@ -16,18 +16,18 @@ context("CalculateROAS")
 
 test_that("Attribution results are reasonable", {
   set.seed(100)
-  mroas <- CalculateROAS(test.data,
-                         media.names = "traditional",
-                         budget.periods = 3,
-                         t.start = 21, t.end = 30,
-                         budget.proportion = 0.99)
   roas <- CalculateROAS(test.data,
                         media.names = "traditional",
                         budget.periods = 3,
                         t.start = 21, t.end = 30,
                         budget.proportion = 0)
-  expect_true(mroas > 0 & mroas < 0.01)
-  expect_true(roas > 0.26 & roas < 0.27)
+  mroas <- CalculateROAS(test.data,
+                         media.names = "search",
+                         budget.periods = 3,
+                         t.start = 21, t.end = 30,
+                         budget.proportion = 0.99)
+  expect_true(roas > 2.12 & roas < 2.14)
+  expect_true(mroas> 0.96 & mroas < 0.98)
 })
 
 context(".GenerateDataUnderNewBudget")

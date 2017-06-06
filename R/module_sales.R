@@ -25,13 +25,15 @@ utils::globalVariables(c(
 #'   columns corresponding to specific variables
 #' @param price numeric vector of product price over time. If the vector is
 #'   shorter than the number of timepoints, it is repeated as necessary.
+#' @param mean.price numeric scaler, the mean of price over time. Defaults to
+#'   zero.
 #' @param advertiser.demand.intercept list of numeric vectors corresponding to
 #'   each brand state (favorability, loyalty, and availability). The
 #'   product of multiplicands corresponding to a particular segment with
 #'   'purchase' activity state is the probability consumers in that
-#'   segment will purchase the advertiser's product if the price is 0 and
-#'   there is no competition. Missing members of the list have no effect
-#'   on the calculation.
+#'   segment will purchase the advertiser's product if the price is
+#'   mean.price and there is no competition. Missing members of the list have no
+#'   effect on the calculation.
 #' @param advertiser.demand.slope list of numeric vectors corresponding to each
 #'   brand state (favorability, loyalty, and availability). The product of
 #'   multiplicands corresponding to a particular segment with 'purchase'
@@ -60,7 +62,7 @@ utils::globalVariables(c(
 #'   have no effect on the calculation.
 #' @param purchase.quantity.intercept numeric, at least 1. Represents the
 #'   average number of units bought by each consumer purchasing from the
-#'   advertiser's brand.
+#'   advertiser's brand, if price is mean.price.
 #' @param purchase.quantity.slope numeric, generally >= 0. Represents the
 #'   decrease in the average purchase quantity per consumer purchasing
 #'   from the advertiser's brand given a unit increase in price. Missing
@@ -86,7 +88,7 @@ utils::globalVariables(c(
 #' @export
 
 DefaultSalesModule <- function(
-    data.dt, price,
+    data.dt, price, mean.price = 0,
     advertiser.demand.intercept = list(),
     advertiser.demand.slope = list(
         favorability = rep(0, length(kFavorabilityStates))),
@@ -148,7 +150,7 @@ DefaultSalesModule <- function(
       1,
       pmax(0,
            advertiser.demand.intercept -
-           advertiser.demand.slope * current.price))
+           advertiser.demand.slope * (current.price - mean.price)))
 
   # Add competition, and calculate final probabilities of consumers
   # purchasing from the advertiser vs. competitor brands.
@@ -180,7 +182,7 @@ DefaultSalesModule <- function(
   advertiser.units.per.purchaser <- max(
       1,
       purchase.quantity.intercept -
-      purchase.quantity.slope * current.price)
+      purchase.quantity.slope * (current.price - mean.price))
   competitor.units.per.purchaser <- max(1, purchase.quantity.competitor)
   # Simulate the total number of sales.
   data.dt[,

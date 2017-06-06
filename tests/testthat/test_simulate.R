@@ -16,8 +16,9 @@ context("SimulateAMSS")
 
 test_that("variables have reasonable values", {
   # Test that simulated data achieves specified population.
-  expect_true(all(sapply(test.data$data.full,
-                         function(x) x[, sum(pop) == 1000])))
+  expect_true(all(sapply(
+      test.data$data.full,
+      function(x) x[, sum(pop) == test.args$nat.mig.params$population])))
   expect_true(cor(test.data$data[, revenue],
               test.args$nat.mig.params$market.rate.seas) > 0.5)
 })

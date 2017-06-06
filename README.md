@@ -1,4 +1,4 @@
-# R package amss version 1.0.0
+# R package amss version 1.0.1
 
 Copyright (C) 2017 Google, Inc.
 License: Apache 2.0

@@ -167,7 +167,7 @@ GetCategoryStates <- function() {
                           category.states$satiation == "unsatiated"), ])
 }
 
-#' Vector of all category states.
+#' All category states.
 #'
 #' @rdname population segmentation
 #' @export
@@ -197,14 +197,14 @@ GetBrandStates <- function() {
                         brand.states$loyalty == "loyal"), ])
 }
 
-#' Vector of all brand states.
+#' All brand states.
 #'
 #' @rdname population segmentation
 #' @export
 
 kBrandStates <- setDT(GetBrandStates())
 
-#' Vector of all consumer states.
+#' All consumer states.
 #'
 #' @rdname population segmentation
 #' @export

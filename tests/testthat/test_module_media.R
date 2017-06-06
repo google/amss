@@ -36,7 +36,8 @@ context("DefaultSearchMediaModule")
 
 test_that("the function completes successfully", {
   dt <- InitStateData(time.index = 13)
-  InitPop(data.dt = dt, pop.total = 1e5, market.rate = 0.7,
+  InitPop(data.dt = dt, pop.total = test.args$nat.mig.params$population,
+          market.rate = 0.7,
           prop.activity = c(0.5, 0.3, 0.2),
           prop.favorability = c(0.15, 0.1, 0.2, 0.35, 0.2))
   do.call(DefaultSearchMediaModule,

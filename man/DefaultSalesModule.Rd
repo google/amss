@@ -4,7 +4,8 @@
 \alias{DefaultSalesModule}
 \title{Model advertiser and competitor sales.}
 \usage{
-DefaultSalesModule(data.dt, price, advertiser.demand.intercept = list(),
+DefaultSalesModule(data.dt, price, mean.price = 0,
+  advertiser.demand.intercept = list(),
   advertiser.demand.slope = list(favorability = rep(0,
   length(kFavorabilityStates))), competitor.demand.max = list(loyalty = c(1,
   0, 1)), competitor.demand.replacement = list(loyalty = c(0.5, 0, 1)),
@@ -19,13 +20,16 @@ columns corresponding to specific variables}
 \item{price}{numeric vector of product price over time. If the vector is
 shorter than the number of timepoints, it is repeated as necessary.}
 
+\item{mean.price}{numeric scaler, the mean of price over time. Defaults to
+zero.}
+
 \item{advertiser.demand.intercept}{list of numeric vectors corresponding to
 each brand state (favorability, loyalty, and availability). The
 product of multiplicands corresponding to a particular segment with
 'purchase' activity state is the probability consumers in that
-segment will purchase the advertiser's product if the price is 0 and
-there is no competition. Missing members of the list have no effect
-on the calculation.}
+segment will purchase the advertiser's product if the price is
+mean.price and there is no competition. Missing members of the list have no
+effect on the calculation.}
 
 \item{advertiser.demand.slope}{list of numeric vectors corresponding to each
 brand state (favorability, loyalty, and availability). The product of
@@ -58,7 +62,7 @@ have no effect on the calculation.}
 
 \item{purchase.quantity.intercept}{numeric, at least 1. Represents the
 average number of units bought by each consumer purchasing from the
-advertiser's brand.}
+advertiser's brand, if price is mean.price.}
 
 \item{purchase.quantity.slope}{numeric, generally >= 0. Represents the
 decrease in the average purchase quantity per consumer purchasing

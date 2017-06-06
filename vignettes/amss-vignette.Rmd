@@ -182,7 +182,7 @@ marketing interventions is specified as a list below.
 
 ``` {r nat_mig_params, message = FALSE}
 nat.mig.params <- list(
-    population = as.integer(2.4e8),
+    population = 2.4e8,
     market.rate.trend = 0.68,
     market.rate.seas = market.rate.seas,
     # activity states for newly responsive (in-market & un-satiated)
@@ -432,15 +432,23 @@ The sales parameters below specify
         advertiser's brand. Since the second entry is 0, consumers who are loyal
         to the advertiser's brand will never buy a competitor brand.
     *   By default, the parameter `competitor.demand.replacement` is defined as
-        `list(loyalty = c(0.5, 0, 1))`. Thus, as the price of the advertiser's
-        product price decreases and demand for the advertiser's brand increases,
-        consumers conflicted between the advertiser and its competitors will
-        choose the advertiser's brand at half the rate they would have in the
-        absence of competitive pressure. For example, if, in the absence of the
-        competition, 100% of switchers would have purchase the advertiser's
-        product, 80% are considering a competitor brand and half of them will
-        end up choosing the competitor's brand. Thus, 60% of switchers will buy
-        the advertiser's brand, and 40% will buy a competitor's brand.
+        `list(loyalty = c(0.5, 0, 1))`. The first entry refers to consumers
+        with loyalty state `switcher`, and specifies that switchers conflicted
+        between the advertiser and its competitors will choose the advertiser's
+        brand at half the rate they would have in the absence of competitive
+        pressure. When this parameter increases, the presence of competitive
+        pressure has a stronger negative effect on advertiser sales.
+        
+        Suppose that there are 100 purchasers labeled as `switcher`. Also
+        suppose, first, that at the current price point, in the absence of
+        competition, all these switchers would have purchased the advertiser's
+        product; second, that in the advertiser's absence 80 would have bought
+        a competitor product. Then, the replacement rate specifies that of the
+        80 (minimum of 100 and 80) people who potentially could purchase either
+        brand, half (40) choose the advertiser's brand. Since there were 20
+        consumers who weren't interested in any competitor products at the
+        current pricing levels, a total of 60 consumers choose the advertiser's
+        brand and 40 choose a competitor's.
 
 ``` {r sales_params, message = FALSE}
 sales.params <- list(
@@ -648,7 +656,7 @@ from 1.
 # References
 
 [1] Zhang, S. and Vaver, J. (2017). The Aggregate Marketing System Simulator.
-*[research.google.com](https://research.google.com/pubs/pub45996.html)*.
+*[https://research.google.com/pubs/pub45996.html](https://research.google.com/pubs/pub45996.html)*.
 
 # Disclaimer
 This software is not an official Google product. For research purposes only. Copyright 2017 Google, Inc.

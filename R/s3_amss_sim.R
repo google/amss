@@ -93,3 +93,15 @@ GetPopulation <- function(object) {
   # Return population size, as read from the parameters.
   return(object$params$nat.mig.params$population)
 }
+
+#' Get the budget period assigned to each time interval.
+#'
+#' Read the budget indices from an \code{amss.sim} object.
+#'
+#' The budget indices specify which time intervals belong to the same budget
+#' period.
+
+GetBudgetIdx <- function(object) {
+
+  return(object$params$media.params[[1]]$budget.index)
+}

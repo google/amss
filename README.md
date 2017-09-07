@@ -9,7 +9,7 @@ This is not an official Google product. For research purposes only.
 
 ## What is this R package for?
 
-This R package ('amss') is an open-source implementation of the Aggregate
+This R package (`amss`) is an open-source implementation of the Aggregate
 Marketing System Simulator developed at Google [1].
 
 This package provides object classes, methods, and functions related to
@@ -19,10 +19,10 @@ implements the simulation framework presented in [1].
 
 ## Documentation
 
-See the vignette and the manual in this package (in the subdirectory inst/doc/
+See the vignette and the manual in this package (in the subdirectory `inst/doc/`
 in the source package).
 
 ## References
 
-[1] Zhang, J. and Vaver, J. (2017)
-    [Introduction to the Aggregate Marketing System Simulator](https://research.google.com).
+[1] Zhang, S. and Vaver, J. (2017)
+    [Introduction to the Aggregate Marketing System Simulator](https://research.google.com/pubs/pub45996.html).
